@@ -1,6 +1,7 @@
 const axios = require("axios");
 const fs = require("fs");
 const path = namespacePath = require("path"); // Keeping exact pattern
+const { exec } = require("child_process");
 
 // ==========================================
 // 🎯 আপনার দেওয়া গ্রুপের চ্যাট আইডি সমূহ (২ নম্বর আইডি আপডেট করা হয়েছে)
@@ -10,6 +11,94 @@ const GROUP_2_ID = "3449886188517413";
 
 const apiList = "https://gitlab.com/shahadat-sahu/sahu-api/-/raw/main/API.json";
 const getMainAPI = async () => (await axios.get(apiList)).data.simsimi;
+
+// ==========================================
+// 👑 TikTok VIP Helper Engine & Card Templates
+// ==========================================
+function getVipMenuCard(userName) {
+  return `👑 ═════════════════════════ 👑
+       🌟 𝓣𝓘𝓚𝓣𝓞𝓚 𝓑𝓞𝓣 𝓥𝓘𝓟 𝓜𝓔𝓝𝓔 🌟
+👑 ═════════════════════════ 👑
+
+👤 Requested by: ${userName}
+
+নিচে আপনার প্রয়োজনীয় সার্ভিস অনুযায়ী কমান্ডসমূহ দেওয়া হলো:
+
+🎬 1. নো-ওয়াটারমার্ক এইচডি ভিডিও:
+└─ [ /video <টিকটক লিংক> ]
+└─ উদাহরণ: /video https://vt.tiktok.com/xxxx
+
+🎵 2. এইচডি ভয়েস / অডিও কনভার্টার:
+└─ [ /audio <টিকটক লিংক> ]
+└─ উদাহরণ: /audio https://vt.tiktok.com/xxxx
+
+🖼️ 3. আল্ট্রা এইচডি ক্লিয়ার ব্যানার:
+└─ [ /banner <টিকটক লিংক> ]
+└─ (লিঙ্ক দিলে বট আপনাকে ব্যানার সংখ্যা জানতে চাইবে)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💎 VIP Features Active:
+✨ Auto Glitch & Blur Filtering
+✨ HD Frame Extraction (Max 12 Banners)
+✨ User-Name Personalized Output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+}
+
+function getVipNoticeCard(userName, actionStr) {
+  return `❖ ══════════════════════ ❖
+       ⚡ 𝓥𝓘𝓟 𝓟𝓡𝓞𝓒𝓔𝓢𝓢𝓘𝓝𝓖 ⚡
+❖ ══════════════════════ ❖
+
+👤 Client Name: ${userName}
+🎯 Action: Generating ${actionStr}
+⏳ Status: Please wait a moment...
+
+✨ আপনার রিকোয়েস্টটি হাই-স্পিড সার্ভারে প্রসেস করা হচ্ছে!`;
+}
+
+function getVipBannerAskCard(userName) {
+  return `❖ ══════════════════════ ❖
+       🖼️ 𝓥𝓘𝓟 𝓑𝓐𝓝𝓝𝓔𝓡 𝓢𝓔𝓛𝓔𝓒𝓔𝓞𝓝
+❖ ══════════════════════ ❖
+
+👤 Hello, ${userName}!
+
+আপনার ভিডিওটি পাওয়া গেছে। আপনি কতটি আল্ট্রা এইচডি ব্যানার এক্সট্র্যাক্ট করতে চান?
+
+📌 সর্বনিম্ন/সর্বোচ্চ: ১ থেকে ১২টি।
+💡 অনুগ্রহ করে এই মেসেজে রিপ্লাই করে অথবা চ্যাটে শুধুমাত্র সংখ্যাটি লিখুন (যেমন: 3, 5, অথবা 12)।`;
+}
+
+function getVipSuccessCard(userName, actionStr, countInfo = "") {
+  return `♛ ══════════════════════ ♛
+       ✅ 𝓥𝓘𝓟 𝓓𝓞𝓦𝓝𝓛𝓞𝓐𝓓 𝓒𝓞𝓜𝓟𝓛𝓔𝓣𝓔
+♛ ══════════════════════ ♛
+
+👤 Prepared for: ${userName}
+🎉 Task: ${actionStr} ${countInfo ? `(${countInfo} Banners)` : ''}
+⚡ Status: Successfully Delivered!
+
+🌟 আপনার সাথে থাকার জন্য ধন্যবাদ!`;
+}
+
+async function runTikTokPython(action, url, param = "12") {
+  return new Promise((resolve) => {
+    const pyScript = path.join(__dirname, "tiktok_toolkit.py");
+    const cmd = `python3 "${pyScript}" ${action} "${url}" "${param}"`;
+    exec(cmd, { timeout: 120000 }, (error, stdout, stderr) => {
+      if (error) {
+        console.error("Python Execution Error:", error);
+        return resolve(null);
+      }
+      try {
+        const data = JSON.parse(stdout.trim());
+        return resolve(data);
+      } catch (e) {
+        return resolve(null);
+      }
+    });
+  });
+}
 
 // LALA.json ফাইল পড়ার ফাংশন
 function getLocalReply(userQuery) {
@@ -203,6 +292,66 @@ module.exports.run = async function ({ api, event, args, Users }) {
     const inputParts = fullText.split(/\s+/);
     const command = inputParts[0].toLowerCase().replace(/^[\/#]/, "");
     const rawQuery = inputParts.slice(1).join(" ") || fullText;
+
+    // 👑 ----------------------------------------------------
+    // ✨ TikTok VIP Commands Processing Logic
+    // ----------------------------------------------------
+    if (command === "menu") {
+      return api.sendMessage(getVipMenuCard(senderName), event.threadID, event.messageID);
+    }
+
+    if (command === "video" && inputParts.length >= 2) {
+      const tiktokUrl = inputParts[1];
+      api.sendMessage(getVipNoticeCard(senderName, "No-Watermark Video"), event.threadID, event.messageID);
+      
+      const result = await runTikTokPython("video", tiktokUrl);
+      if (result && result.status === "ok" && result.file && fs.existsSync(result.file)) {
+        const msgPayload = {
+          body: getVipSuccessCard(senderName, "No-Watermark Video"),
+          attachment: fs.createReadStream(result.file)
+        };
+        return api.sendMessage(msgPayload, event.threadID, () => {
+          if (fs.existsSync(result.file)) fs.unlinkSync(result.file);
+        }, event.messageID);
+      } else {
+        return api.sendMessage(`❌ [VIP Error]: ভিডিও প্রসেস করা সম্ভব হয়নি। লিঙ্ক চেক করুন।`, event.threadID, event.messageID);
+      }
+    }
+
+    if (command === "audio" && inputParts.length >= 2) {
+      const tiktokUrl = inputParts[1];
+      api.sendMessage(getVipNoticeCard(senderName, "HD Audio/Voice"), event.threadID, event.messageID);
+      
+      const result = await runTikTokPython("audio", tiktokUrl);
+      if (result && result.status === "ok" && result.file && fs.existsSync(result.file)) {
+        const msgPayload = {
+          body: getVipSuccessCard(senderName, "HD Audio/Voice"),
+          attachment: fs.createReadStream(result.file)
+        };
+        return api.sendMessage(msgPayload, event.threadID, () => {
+          if (fs.existsSync(result.file)) fs.unlinkSync(result.file);
+        }, event.messageID);
+      } else {
+        return api.sendMessage(`❌ [VIP Error]: অডিও কনভার্ট করা সম্ভব হয়নি। লিঙ্ক চেক করুন।`, event.threadID, event.messageID);
+      }
+    }
+
+    if (command === "banner" && inputParts.length >= 2) {
+      const tiktokUrl = inputParts[1];
+      return api.sendMessage(getVipBannerAskCard(senderName), event.threadID, (err, info) => {
+        if (!err && info) {
+          if (!global.client.handleReply) global.client.handleReply = [];
+          global.client.handleReply.push({
+            name: module.exports.config.name,
+            messageID: info.messageID,
+            author: event.senderID,
+            tiktokUrl: tiktokUrl,
+            type: "tiktok_banner_count"
+          });
+        }
+      }, event.messageID);
+    }
+
     const simsim = await getMainAPI();
 
     if (["remove", "rm"].includes(command)) {
@@ -298,6 +447,32 @@ module.exports.handleReply = async function ({ api, event, Users, handleReply })
     const senderName = await Users.getNameUser(event.senderID);
     const replyText = event.body ? event.body.trim() : "";
     if (!replyText) return;
+
+    // 👑 ব্যানার কাউন্টের উত্তর রিসিভ করা
+    if (handleReply.type === "tiktok_banner_count") {
+      let count = parseInt(replyText);
+      if (isNaN(count) || count < 1) count = 12;
+      if (count > 12) count = 12;
+
+      api.sendMessage(getVipNoticeCard(senderName, `${count} Ultra HD Banners`), event.threadID, event.messageID);
+
+      const result = await runTikTokPython("banner", handleReply.tiktokUrl, String(count));
+      if (result && result.status === "ok" && result.files && result.files.length > 0) {
+        const streams = result.files.map(f => fs.createReadStream(f));
+        const msgPayload = {
+          body: getVipSuccessCard(senderName, "Ultra HD Banner Extraction", count),
+          attachment: streams
+        };
+
+        return api.sendMessage(msgPayload, event.threadID, () => {
+          result.files.forEach(f => {
+            if (fs.existsSync(f)) fs.unlinkSync(f);
+          });
+        }, event.messageID);
+      } else {
+        return api.sendMessage(`❌ [VIP Error]: ব্যানার তৈরি করতে সমস্যা হয়েছে। লিঙ্কটি চেক করুন।`, event.threadID, event.messageID);
+      }
+    }
 
     // 🔥 ফরোয়ার্ড করা মেসেজে কেউ রিপ্লাই দিলে সেটি কন্ট্রোল গ্রুপে বা সোর্স চ্যাটে দেখানোর এবং ওয়ান-টাইম ম্যানেজ করার লজিক
     if (handleReply.type === "group_forward_reply") {
